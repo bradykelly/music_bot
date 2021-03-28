@@ -15,7 +15,7 @@ class MusicBot(commands.Bot):
     def setup(self):
         print("Running setup...")
     
-        for cog in self.cogs:
+        for cog in self._cogs:
             self.load_extension(f"bot.cogs.{cog}")
             print(f" Loaded extension '{cog}'")
 
@@ -39,7 +39,7 @@ class MusicBot(commands.Bot):
         await self.shutdown()
 
     async def on_connect(self):
-        print(f"Connected to Discord (latency: {self.latency*1000:,.0f} ms)")
+        print(f"  Connected to Discord (latency: {self.latency*1000:,.0f} ms)")
 
     async def on_resume(self):
         print("Bot resumed")
@@ -52,7 +52,7 @@ class MusicBot(commands.Bot):
         print("Bot ready")
 
     async def prefix(self, bot, msg):
-        return commands.when_mentioned_or(DEFAULT_PREFIX)(bot, msg)
+        return commands.when_mentioned_or(self._fetch_prefix())(bot, msg)
 
     async def process_commands(self, msg):
         ctx = await self.get_context(msg, cls=commands.Context)
