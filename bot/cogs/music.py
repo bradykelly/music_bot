@@ -1,4 +1,5 @@
 import typing as t
+import datetime as dt
 import re
 import asyncio
 import random
@@ -7,7 +8,7 @@ import wavelink
 from enum import Enum
 from discord.ext import commands
 from bot.base_cog import BaseCog
-from lib.music_errors import AlreadyConnectedToChannel, NoVoiceChannel, NoTracksFound
+from lib.music_errors import AlreadyConnectedToChannel, NoVoiceChannel, NoTracksFound, QueueIsEmpty
 from lib.queue import Queue
 from lib.player import Player
 
@@ -94,7 +95,7 @@ class Music(BaseCog, wavelink.WavelinkMixin):
         await player.teardown()
         await ctx.send("Wavelink player disconnected")
 
-    @commands.command(name="play")
+    @commands.command(name="play", aliases=["search"])
     async def play_command(self, ctx, *, query):
         player = self.get_player(ctx)
 
@@ -110,6 +111,36 @@ class Music(BaseCog, wavelink.WavelinkMixin):
                 query = f"ytsearch:{query}"
 
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
+    @commands.command(name="queue", aliases=["q"])
+    async def queue_command(self, ctx, show=10):
+        player = self.get_player(ctx)
+
+        if player.queue.is_empty:
+            raise QueueIsEmpty
+        
+        embed = discord.Embed(
+            title="Queue",
+            description=f"Showing up to next {show} tracks",
+            colour=ctx.author.colour,
+            timestamp=dt.datetime.utcnow()
+        )
+        embed.set_author(name="Query Results")
+        embed.set_footer(text=f"Requested by {ctx.author.display_name}", icon_url=ctx.author.avatar_url)
+        embed.add_field(name="Currently playing", value=player.queue.current_track.title, inline=False)
+        if player.queue.length > 1:
+            embed.add_field(
+                name="Next up",
+                value="\n".join(t.title for t in player.queue.upcoming),
+                inline=False
+            )
+
+        msg = await ctx.send(embed=embed)
+
+    @queue_command.error
+    async def queue_command_error(self, ctx, exc):
+        if isinstance(exc, QueueIsEmpty):
+            await ctx.send("The queue is currently empty.")
 
 
 def setup(bot):
