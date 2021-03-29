@@ -6,14 +6,19 @@ class Database:
 
     pool = None
 
-    def __init__(self, dsn):
+    def __init__(self, bot, dsn):
+        self.bot = bot
+        self.dsn = dsn
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.init_async(dsn))
 
     async def init_async(self, dsn):
         Database.pool = await asyncpg.create_pool(dsn)
 
-    async def get_pool(self):
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
+
+    async def get_connection(self):
         return await Database.pool.acquire()
 
     async def sync(self):
@@ -27,26 +32,26 @@ class Database:
         await self.executemany("DELETE FROM guild WHERE guild_id = $1", removals)        
 
     async def field(self, sql, *values):
-        async with self.get_pool() as conn:
-            return await conn.fetchval(sql, *values)
+        conn = await self.get_connection()
+        return await conn.fetchval(sql, *values)
         
     async def record(self, sql, *values):
-        async with self.get_pool() as conn:
-            return await conn.fetchrow(sql, *values)
+        conn = await self.get_connection()
+        return await conn.fetchrow(sql, *values)
 
     async def records(self, sql, *values):
-        async with self.get_pool() as conn:
-            return await conn.fetch(sql, *values)
+        conn = await self.get_connection()
+        return await conn.fetch(sql, *values)
 
     async def column(self, sql, *values):
-        async with self.get_pool() as conn:
-            rows = await conn.fetch(sql, *values)
-            return [row[0] for row in rows]
+        conn = await self.get_connection()
+        rows = await conn.fetch(sql, *values)
+        return [row[0] for row in rows]
 
     async def execute(self, sql, *values):
-        async with self.get_pool() as conn:
-            await conn.execute(sql, *values)
+        conn = await self.get_connection()
+        await conn.execute(sql, *values)
 
     async def executemany(self, sql, valueset):
-        async with self.get_pool() as conn:
-            await conn.executemany(sql, valueset)   
+        conn = await self.get_connection()
+        await conn.executemany(sql, valueset)   
