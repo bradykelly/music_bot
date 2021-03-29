@@ -16,7 +16,7 @@ class Queue():
         return self._queue[0]
 
     def get_next_track(self):
-        if not self._queue or len(self._queue == 0):
+        if not self._queue or len(self._queue) == 0:
             raise QueueIsEmpty 
 
         self.position += 1

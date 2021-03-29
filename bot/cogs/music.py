@@ -11,6 +11,7 @@ from lib.music_errors import AlreadyConnectedToChannel, NoVoiceChannel, NoTracks
 from lib.queue import Queue
 from lib.player import Player
 
+
 BAD_SNACKS = "https://www.youtube.com/watch?v=Ru10_nXyWlM"
 URL_REGEX = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
 OPTIONS = {
