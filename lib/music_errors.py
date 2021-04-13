@@ -15,3 +15,11 @@ class QueueIsEmpty(commands.CommandError):
 
 class NoTracksFound(commands.CommandError):
     pass
+
+
+class PlayerIsAlreadyPaused(commands.CommandError):
+    pass
+
+
+class PlayerIsAlreadyPlaying(commands.CommandError):
+    pass

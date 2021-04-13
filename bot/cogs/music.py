@@ -8,7 +8,7 @@ import wavelink
 from enum import Enum
 from discord.ext import commands
 from bot.base_cog import BaseCog
-from lib.music_errors import AlreadyConnectedToChannel, NoVoiceChannel, NoTracksFound, QueueIsEmpty
+from lib.music_errors import AlreadyConnectedToChannel, NoVoiceChannel, NoTracksFound, PlayerIsAlreadyPlaying, PlayerIsAlreadyPaused, QueueIsEmpty
 from lib.queue import Queue
 from lib.player import Player
 
@@ -96,14 +96,21 @@ class Music(BaseCog, wavelink.WavelinkMixin):
         await ctx.send("Wavelink player disconnected")
 
     @commands.command(name="play", aliases=["search"])
-    async def play_command(self, ctx, *, query):
+    async def play_command(self, ctx, *, query: t.Optional[str]):
         player = self.get_player(ctx)
 
         if not player.is_connected:
             await player.connect(ctx)
-
+        
         if query is None:
-            pass
+            if not player.is_paused:
+                raise PlayerIsAlreadyPlaying
+
+            if player.queue.is_empty:
+                raise QueueIsEmpty
+
+            await player.set_pause("False")
+            await ctx.send("Playback resumed")
 
         else:
             query = query.strip("<>")
@@ -111,6 +118,28 @@ class Music(BaseCog, wavelink.WavelinkMixin):
                 query = f"ytsearch:{query}"
 
             await player.add_tracks(ctx, await self.wavelink.get_tracks(query))
+
+    @commands.command(name="pause")
+    async def pause_command(self, ctx):
+        player = self.get_player(ctx)
+
+        if player.is_paused:
+            raise PlayerIsAlreadyPaused
+
+        await player.set_pause(True)
+        await ctx.send("Playback paused")
+
+    @pause_command.error
+    async def pause_command_error(self, ctx, exc):
+        if isinstance(exc, PlayerIsAlreadyPaused):
+            await ctx.send("Playback is already paused")
+
+    @commands.command(name="stop")
+    async def stop_command(self, ctx):
+        player = self.get_player(ctx)
+        player.queue.empty()
+        await player.stop()
+        await ctx.send("Playback stopped")
 
     @commands.command(name="queue", aliases=["q"])
     async def queue_command(self, ctx, show=10):
